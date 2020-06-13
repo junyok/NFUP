@@ -51,9 +51,10 @@ contract DOC_v01 {
         managerDetail memory isManager = Managers[msg.sender];
         if(msg.sender != admin){
             require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-01");
-            if(isManager.managerlevel < 15 )mlevel=10;
             if( mlevel > 15 ) mlevel = 15;
         }
+        require( msg.sender != adr , "Can not change self infomation ! ecode-01");
+        
         isManager = Managers[adr];
         bytes memory a1 = bytes(isManager.managername);
         bytes memory a2 = bytes("del");
@@ -71,13 +72,20 @@ contract DOC_v01 {
         return true;
     }
     function get_nth_adr_manager(uint256 nth) public view returns (address) {
+        //managerDetail memory isManager = Managers[msg.sender];
+        //require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-02");
         require( nth > 0 && nth <= managerList.length,"outofrange");
         return managerList[nth];
     }
     function remove_manager( address adr) public returns (bool) {
         require( admin != adr, "contract creater cannot be deleted");
+        
         managerDetail memory isManager = Managers[msg.sender];
         require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-03");
+        
+        managerDetail memory DeleteTarget = Managers[adr];
+        
+        require( DeleteTarget.managerlevel < 15, "Only super admin can delete level 15 ecode-04");
         isManager = managerDetail("del", 0);
         Managers[adr] = isManager;
         return true;
@@ -146,7 +154,7 @@ contract DOC_v01 {
         uint256 LockhasTime = Locked_list[sender].releaseTime;
         uint256 LockhasMax = Locked_list[sender].lockedTokencnt;
         if( block.timestamp < LockhasTime){
-            uint256 OK1 = _balances[sender] - LockhasMax;
+             uint256 OK1 = _balances[sender].sub( LockhasMax);
             require( OK1 >= amount , "Your Wallet has time lock");
         }
 
