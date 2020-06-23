@@ -1,4 +1,5 @@
 pragma solidity 0.5.0;
+//import "./SafeMath.sol";
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
@@ -13,7 +14,7 @@ library SafeMath {
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {return sub(a, b, "SafeMath: subtraction overflow");}
 }
 
-contract DOC_v01 {
+contract DOC_v01  {
     using SafeMath for uint256;
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
@@ -24,6 +25,20 @@ contract DOC_v01 {
     uint8 private _decimals;
     uint256 private _totalSupply;
     string private last_useVersion;
+    
+    constructor() public {
+       managerDetail memory isManager = managerDetail("First Admin", 100);
+       Managers[msg.sender] = isManager;
+       admin               = msg.sender;
+       _name               = "Latam Cash";
+       _symbol             = "NFUP";
+       _decimals           = 18;
+       uint256 INIT_SUPPLY = 1000000000 * (10 ** uint256(_decimals));
+       _totalSupply = INIT_SUPPLY;
+       _balances[msg.sender] = INIT_SUPPLY;
+       managerList.push(msg.sender);
+       emit Transfer(address(0), msg.sender, _totalSupply);
+    }
 
     struct LockDetails{
         uint256 lockedTokencnt;
@@ -39,7 +54,11 @@ contract DOC_v01 {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
+
+
     //////////////////////////////////////// Mint handle //////////////////////////////////////////
+
+
     function Contadmin() public view returns (address) {return admin;}
     function totalSupply() public view returns (uint256) {return _totalSupply;}
     function name() public view returns (string memory) {return _name;}
@@ -51,10 +70,9 @@ contract DOC_v01 {
         managerDetail memory isManager = Managers[msg.sender];
         if(msg.sender != admin){
             require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-01");
+            if(isManager.managerlevel < 15 )mlevel=10;
             if( mlevel > 15 ) mlevel = 15;
         }
-        require( msg.sender != adr , "Can not change self infomation ! ecode-01");
-        
         isManager = Managers[adr];
         bytes memory a1 = bytes(isManager.managername);
         bytes memory a2 = bytes("del");
@@ -79,22 +97,21 @@ contract DOC_v01 {
     }
     function remove_manager( address adr) public returns (bool) {
         require( admin != adr, "contract creater cannot be deleted");
-        
         managerDetail memory isManager = Managers[msg.sender];
         require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-03");
-        
-        managerDetail memory DeleteTarget = Managers[adr];
-        
-        require( DeleteTarget.managerlevel < 15, "Only super admin can delete level 15 ecode-04");
         isManager = managerDetail("del", 0);
         Managers[adr] = isManager;
         return true;
     }
 
     function get_count_manager() public view returns (uint256) {
+        //managerDetail memory isManager = Managers[msg.sender];
+        //require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-04");
         return managerList.length;
     }
     function get_managername(address adr) public view returns (string memory) {
+        //managerDetail memory isManager = Managers[msg.sender];
+        //require( isManager.managerlevel > 14, "This is manager level over 15 only ecode-05");
         managerDetail memory isManager = Managers[adr];
         return isManager.managername;
     }
@@ -154,7 +171,7 @@ contract DOC_v01 {
         uint256 LockhasTime = Locked_list[sender].releaseTime;
         uint256 LockhasMax = Locked_list[sender].lockedTokencnt;
         if( block.timestamp < LockhasTime){
-             uint256 OK1 = _balances[sender].sub( LockhasMax);
+            uint256 OK1 = _balances[sender] - LockhasMax;
             require( OK1 >= amount , "Your Wallet has time lock");
         }
 
@@ -170,8 +187,8 @@ contract DOC_v01 {
         return true;
     }
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, "ERC20: transfer amount exceeds allowance"));
         _transfer(sender, recipient, amount);
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
@@ -208,26 +225,5 @@ contract DOC_v01 {
         //_approve(account, msg.sender, _allowances[account][msg.sender].sub(amount, "ERC20: burn amount exceeds allowance"));
         _burn(account, amount);
     }
-
-    //////////////////////////////////////// Lock token handle //////////////////////////////////////////
-
-    function token_mint(address account) public returns (bool){
-        require(account != address(0), "ERC20: mint to the zero address");
-        last_useVersion = "First Ver";
-        managerDetail memory isManager = managerDetail("First Admin", 100);
-        Managers[account] = isManager;
-        admin               = account;
-        _name               = "Natural Farm Union Protocol";
-        _symbol             = "NFUP";
-        _decimals           = 18;
-        uint256 INIT_SUPPLY = 1000000000 * (10 ** uint256(_decimals));
-
-        _totalSupply = INIT_SUPPLY;
-        _balances[account] = INIT_SUPPLY;
-        managerList.push(account);
-
-        emit Transfer(address(0), account, _totalSupply);
-        return true;
-    }
-
+   
 }
